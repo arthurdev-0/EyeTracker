@@ -18,10 +18,15 @@ except Exception:
     mp_face_mesh = None
     face_mesh_available = False
 
+# Se rastreamento facial está disponível, ligar o mouse control por padrão
+if face_mesh_available:
+    mouse_control_enabled = True
+
+
 MONITOR_WIDTH, MONITOR_HEIGHT = pyautogui.size()
 CENTER_X = MONITOR_WIDTH // 2
 CENTER_Y = MONITOR_HEIGHT // 2
-mouse_control_enabled = True
+mouse_control_enabled = False  # Começa desabilitado
 filter_length = 8
 
 
@@ -99,8 +104,15 @@ while cap.isOpened():
 
     h, w, _ = frame.shape
     landmarks_frame = np.zeros_like(frame)
-
-    if face_mesh_available and face_mesh is not None:
+    
+    # Se não há rastreamento facial disponível, usar modo demonstração
+    if not face_mesh_available or face_mesh is None:
+        cv2.putText(frame, "Modo demonstracao - F7: desabilitar mouse | Q: sair", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        # Desabilitar mouse em modo demonstração
+        with mouse_lock:
+            mouse_target[0] = CENTER_X
+            mouse_target[1] = CENTER_Y
+    else:
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = face_mesh.process(rgb)
 
@@ -279,13 +291,15 @@ while cap.isOpened():
         cv2.line(frame, project(avg_origin), project(ray_end), (15, 255, 0), 3)
         cv2.line(landmarks_frame, project(avg_origin), project(ray_end), (15, 255, 0), 3)
 
-    cv2.putText(frame, "Modo demonstracao", (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
     cv2.imshow("Head-Aligned Cube", frame)
     cv2.imshow("Facial Landmarks", landmarks_frame)
 
     if keyboard.is_pressed('f7'):
-        mouse_control_enabled = not mouse_control_enabled
-        print(f"[Mouse Control] {'Enabled' if mouse_control_enabled else 'Disabled'}")
+        if face_mesh_available:  # Apenas permitir toggle se rastreamento estiver disponível
+            mouse_control_enabled = not mouse_control_enabled
+            print(f"[Mouse Control] {'Enabled' if mouse_control_enabled else 'Disabled'}")
+        else:
+            print("[Aviso] Mouse control desabilitado em modo demonstração")
         time.sleep(0.3)  # debounce to prevent rapid toggling
 
 
