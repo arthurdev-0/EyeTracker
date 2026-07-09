@@ -481,21 +481,50 @@ def process_video(video_path, input_method):
     out.release()
     cv2.destroyAllWindows()
 
+def get_default_video_path():
+    """Return the first existing video path from a list of sensible defaults."""
+    candidates = [
+        os.path.join(os.path.dirname(__file__), 'eye_test.mp4'),
+        os.path.join(os.getcwd(), 'eye_test.mp4'),
+        'C:/Google Drive/Eye Tracking/fulleyetest.mp4',
+    ]
+
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
+
+    return os.path.join(os.path.dirname(__file__), 'eye_test.mp4')
+
+
 #Prompts the user to select a video file if the hardcoded path is not found
 #This is just for my debugging convenience :)
 def select_video():
     root = tk.Tk()
     root.withdraw()  # Hide the main window
-    video_path = 'C:/Google Drive/Eye Tracking/fulleyetest.mp4'
-    if not os.path.exists(video_path):
-        print("No file found at hardcoded path. Please select a video file.")
-        video_path = filedialog.askopenfilename(title="Select Video File", filetypes=[("Video Files", "*.mp4;*.avi")])
-        if not video_path:
-            print("No file selected. Exiting.")
-            return
-            
-    #second parameter is 1 for video 2 for webcam
-    process_video(video_path, 1)
+
+    print("Choose input source:")
+    print("1 - Use a video file")
+    print("2 - Use the webcam")
+    choice = input("Enter 1 or 2: ").strip()
+
+    if choice == "1":
+        video_path = get_default_video_path()
+        if not os.path.exists(video_path):
+            print("No file found at the default path. Please select a video file.")
+            video_path = filedialog.askopenfilename(title="Select Video File", filetypes=[("Video Files", "*.mp4;*.avi")])
+            if not video_path:
+                print("No file selected. Exiting.")
+                return
+        else:
+            print(f"Using video: {video_path}")
+
+        process_video(video_path, 1)
+    elif choice == "2":
+        print("Using webcam")
+        process_video(None, 2)
+    else:
+        print("Invalid choice. Defaulting to webcam.")
+        process_video(None, 2)
 
 if __name__ == "__main__":
     select_video()
