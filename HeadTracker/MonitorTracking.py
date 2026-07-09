@@ -7,6 +7,10 @@ import threading
 import time
 import keyboard
 
+# Disable PyAutoGUI failsafe so the webcam mouse control can move near screen corners.
+pyautogui.FAILSAFE = False
+pyautogui.PAUSE = 0
+
 try:
     import mediapipe as mp
     mp_face_mesh = getattr(mp, "solutions", None)

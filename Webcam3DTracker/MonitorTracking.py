@@ -666,7 +666,8 @@ def render_debug_view_orbit(
 
     # --- Key command help text in lower-left ---
     help_text = [
-        "C = calibrate screen center",
+        "C = lock eyes / calibrate screen",
+        "S = screen center calibration",
         "J = yaw left",
         "L = yaw right",
         "I = pitch up",
