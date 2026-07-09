@@ -50,6 +50,10 @@ calibration_offset_pitch = 0
 ray_origins = deque(maxlen=filter_length)
 ray_directions = deque(maxlen=filter_length)
 
+# Inicializar variáveis de ângulo
+raw_yaw_deg = 0
+raw_pitch_deg = 0
+
 # Initialize MediaPipe Face Mesh when available
 if face_mesh_available:
     face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False,
@@ -307,9 +311,12 @@ while cap.isOpened():
     if key == ord('q'):
         break
     elif key == ord('c'):
-        calibration_offset_yaw = 180 - raw_yaw_deg
-        calibration_offset_pitch = 180 - raw_pitch_deg
-        print(f"[Calibrated] Offset Yaw: {calibration_offset_yaw}, Offset Pitch: {calibration_offset_pitch}")
+        if face_mesh_available and raw_yaw_deg is not None:
+            calibration_offset_yaw = 180 - raw_yaw_deg
+            calibration_offset_pitch = 180 - raw_pitch_deg
+            print(f"[Calibrated] Offset Yaw: {calibration_offset_yaw}, Offset Pitch: {calibration_offset_pitch}")
+        else:
+            print("[Aviso] Calibração não disponível em modo demonstração")
 
 
 cap.release()
