@@ -1,13 +1,22 @@
 import cv2
-import mediapipe as mp
 import numpy as np
 from collections import deque
 import pyautogui
 import math
 import threading
 import time
-import subprocess
 import keyboard
+
+try:
+    import mediapipe as mp
+    mp_face_mesh = getattr(mp, "solutions", None)
+    if mp_face_mesh is None:
+        raise AttributeError("mediapipe.solutions not available")
+    mp_face_mesh = mp_face_mesh.face_mesh
+    face_mesh_available = True
+except Exception:
+    mp_face_mesh = None
+    face_mesh_available = False
 
 MONITOR_WIDTH, MONITOR_HEIGHT = pyautogui.size()
 CENTER_X = MONITOR_WIDTH // 2
@@ -36,16 +45,30 @@ calibration_offset_pitch = 0
 ray_origins = deque(maxlen=filter_length)
 ray_directions = deque(maxlen=filter_length)
 
-# Initialize MediaPipe Face Mesh
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False,
-                                  max_num_faces=1,
-                                  refine_landmarks=True,
-                                  min_detection_confidence=0.5,
-                                  min_tracking_confidence=0.5)
+# Initialize MediaPipe Face Mesh when available
+if face_mesh_available:
+    face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False,
+                                      max_num_faces=1,
+                                      refine_landmarks=True,
+                                      min_detection_confidence=0.5,
+                                      min_tracking_confidence=0.5)
+else:
+    face_mesh = None
+    print("MediaPipe não está disponível; rodando em modo de demonstração sem rastreamento facial.")
 
-# Open camera
-cap = cv2.VideoCapture(1)
+# Open camera - auto-detect available camera
+cap = None
+for camera_idx in [0, 1]:
+    temp_cap = cv2.VideoCapture(camera_idx)
+    if temp_cap.isOpened():
+        cap = temp_cap
+        print(f"Câmera encontrada no índice {camera_idx}")
+        break
+    temp_cap.release()
+
+if cap is None or not cap.isOpened():
+    print("Erro: Nenhuma câmera encontrada. Verifique a conexão.")
+    exit(1)
 
 # Landmark indices for bounding box
 LANDMARKS = {
@@ -75,12 +98,14 @@ while cap.isOpened():
         break
 
     h, w, _ = frame.shape
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    results = face_mesh.process(rgb)
+    landmarks_frame = np.zeros_like(frame)
 
-    if results.multi_face_landmarks:
-        face_landmarks = results.multi_face_landmarks[0].landmark
-        landmarks_frame = np.zeros_like(frame)  # Blank black frame
+    if face_mesh_available and face_mesh is not None:
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb)
+
+        if results.multi_face_landmarks:
+            face_landmarks = results.multi_face_landmarks[0].landmark
 
         outline_pts = []
         # Draw all landmarks as single white pixels
@@ -254,6 +279,7 @@ while cap.isOpened():
         cv2.line(frame, project(avg_origin), project(ray_end), (15, 255, 0), 3)
         cv2.line(landmarks_frame, project(avg_origin), project(ray_end), (15, 255, 0), 3)
 
+    cv2.putText(frame, "Modo demonstracao", (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
     cv2.imshow("Head-Aligned Cube", frame)
     cv2.imshow("Facial Landmarks", landmarks_frame)
 
