@@ -18,15 +18,10 @@ except Exception:
     mp_face_mesh = None
     face_mesh_available = False
 
-# Se rastreamento facial está disponível, ligar o mouse control por padrão
-if face_mesh_available:
-    mouse_control_enabled = True
-
-
 MONITOR_WIDTH, MONITOR_HEIGHT = pyautogui.size()
 CENTER_X = MONITOR_WIDTH // 2
 CENTER_Y = MONITOR_HEIGHT // 2
-mouse_control_enabled = False  # Começa desabilitado
+mouse_control_enabled = True  # Começa habilitado
 filter_length = 8
 
 
@@ -105,6 +100,9 @@ while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
+    
+    # Espelhar a imagem horizontalmente (mirror)
+    frame = cv2.flip(frame, 1)
 
     h, w, _ = frame.shape
     landmarks_frame = np.zeros_like(frame)
